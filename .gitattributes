@@ -1,0 +1,8 @@
+# Ensure shell scripts always have LF line endings (L1 fix)
+*.sh text eol=lf
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf

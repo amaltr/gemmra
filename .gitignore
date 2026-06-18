@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data (too large for git — download via scripts)
+data/raw/
+data/processed/
+data/external/
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# Model files (hosted on HuggingFace)
+*.gguf
+*.safetensors
+*.bin
+checkpoints/
+models/
+
+# Logs and outputs
+*.log
+wandb/
+outputs/
+results/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Sensitive
+sensitive/
+.env
+*.token
