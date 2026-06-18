@@ -1,0 +1,61 @@
+# Local SFT Training Configuration (Gemma 4 12B on RTX Ada 3500 12GB)
+# This is the LOCAL version of sft_config.yaml — optimized for 12GB VRAM
+# Use on your laptop alongside cloud training on MI300X
+#
+# Key differences from cloud config:
+# - Model: 12B instead of 31B (fits in 12GB)
+# - LoRA r=16 instead of 32 (lower memory)
+# - Batch size 1 instead of 4 (12GB constraint)
+# - Seq length 2048 instead of 4096 (memory savings)
+# - Fewer target modules (skip MLP for memory)
+
+model:
+  name: "google/gemma-4-12b-it"        # 12B fits in 12GB VRAM (4-bit: ~7-8GB)
+  fallback_1: "unsloth/gemma-2-9b-it"  # If 12B won't load
+  max_seq_length: 2048                  # Shorter than cloud (4096) for memory
+  load_in_4bit: true
+  dtype: "bfloat16"
+
+lora:
+  r: 16                                 # Reduced from 32 (saves ~300MB VRAM)
+  alpha: 32                             # 2× rank
+  dropout: 0
+  bias: "none"
+  target_modules:                       # Attention only (skip MLP to save VRAM)
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+  gradient_checkpointing: "unsloth"
+
+training:
+  per_device_batch_size: 1              # Minimum — 12GB VRAM is tight
+  gradient_accumulation_steps: 8        # Effective batch = 8
+  learning_rate: 2.0e-4
+  num_epochs: 1                         # Quick iteration (full training on cloud)
+  warmup_ratio: 0.05
+  lr_scheduler: "cosine"
+  weight_decay: 0.01
+  optimizer: "adamw_8bit"
+  fp16: false
+  bf16: true
+  logging_steps: 10
+  save_steps: 200
+  save_total_limit: 2
+  seed: 42
+  max_samples: 2000                     # Subset for speed (full dataset on cloud)
+
+data:
+  train_file: "data/processed/training_data.jsonl"
+  eval_file: "data/processed/eval_data.jsonl"
+  format: "gemma4_chat"
+
+output:
+  dir: "checkpoints/local_sft"
+  push_to_hub: false
+
+# Notes:
+# - Same training data as cloud — no need to rebuild
+# - Checkpoint format is compatible with eval and demo scripts
+# - This is for TESTING the pipeline, not the submission model
+# - Real submission model trains on MI300X with Gemma 4 31B (sft_config.yaml)

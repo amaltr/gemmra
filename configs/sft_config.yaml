@@ -1,0 +1,64 @@
+# SFT Training Configuration
+# See docs/decisions/ADR-003-training-strategy.md for rationale
+# Updated June 10, 2026 — bf16 LoRA upgrade (ADR-003 v4, ADR-006)
+
+model:
+  name: "google/gemma-4-31b-it"              # PRIMARY — MMLU-Pro 85.2% + thinking mode. See ADR-002 v3
+  fallback_1: "google/gemma-4-12b-it"        # Same family, same tokens, 2x faster
+  max_seq_length: 8192                       # Increased from 4096 — MI300X VRAM allows longer sequences
+  load_in_4bit: false                         # bf16 LoRA — NO quantization (192 GB VRAM)
+  dtype: "bfloat16"                           # Full bf16 precision (better gradients than 4-bit)
+
+lora:
+  r: 64                                      # Increased from 32 → 64 for deeper domain adaptation
+                                             # MI300X 192 GB VRAM makes this trivial (~400MB extra)
+                                             # r=64 captures more nuanced PV domain knowledge
+  alpha: 128                                 # 2× rank — standard rule of thumb
+  dropout: 0
+  bias: "none"
+  target_modules:                            # ALL linear layers (2026 best practice)
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  gradient_checkpointing: "unsloth"
+
+training:
+  per_device_batch_size: 8                   # Increased from 4 — better gradient estimates on 192GB
+  gradient_accumulation_steps: 4             # Effective batch = 32
+  learning_rate: 5.0e-5                      # Reduced from 2e-4 → 5e-5 (old rate converged in 5 steps = memorization)
+  num_epochs: 1                               # Reduced from 3 → 1 (loss flat from epoch 0.7, data too repetitive for more)
+  warmup_ratio: 0.05
+  lr_scheduler: "cosine"
+  weight_decay: 0.01
+  optimizer: "adamw_8bit"
+  fp16: false
+  bf16: true
+  logging_steps: 10
+  save_steps: 200
+  save_total_limit: 3
+  eval_strategy: "steps"                       # Monitor eval loss for overfit detection
+  eval_steps: 200                              # Eval every 200 steps
+  load_best_model_at_end: true                 # Auto-select best checkpoint by eval_loss
+  seed: 42
+  # curriculum_learning: REMOVED (H4 FIX — HF Trainer shuffles, making it no-op)
+
+data:
+  train_file: "data/processed/training_data.jsonl"
+  eval_file: "data/processed/eval_data.jsonl"   # Decontaminated eval (MeditronFO-adopted)
+  format: "gemma4_chat"                         # Gemma 4 native chat template
+  adversarial_ratio: 0.12                       # 12% adversarial negative examples
+
+output:
+  dir: "checkpoints/sft"
+  push_to_hub: false
+
+# Research citations:
+# - bf16 LoRA: Eliminates quantization noise + bitsandbytes dependency (ADR-003 v4)
+# - LoRA r=64: Deep domain adaptation for PV reasoning (192GB VRAM makes this trivial)
+# - Curriculum learning: REMOVED (H4 — was silently broken by Trainer's shuffle)
+# - Adversarial negatives: Prevent fragile reasoning (2025-2026 consensus)
+# - Decontamination: MeditronFO (arXiv:2605.16215)

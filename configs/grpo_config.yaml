@@ -1,0 +1,50 @@
+# GRPO/DAPO Training Configuration
+# See docs/decisions/ADR-003-training-strategy.md for rationale
+# Updated June 14, 2026 — GRPO dead training overhaul
+
+model:
+  checkpoint: "checkpoints/wise_ft_a90"       # Load from WiSE-FT (SFT + base blend)
+  max_seq_length: 8192                       # Match SFT; thinking traces need headroom
+  load_in_4bit: false                        # bf16 LoRA — no quantization on 192 GB VRAM
+
+training:
+  loss_type: "dapo"                          # DAPO mode — fixes entropy collapse, long-CoT bias
+  epsilon_high: 0.28                         # Clip-higher: prevents entropy collapse
+  per_device_batch_size: 1                   # GRPO FIX: 2→1. With num_gen=8, VRAM per step doubles.
+  num_generations: 8                         # GRPO FIX: 4→8. More diversity → non-zero reward variance.
+                                             # Evidence: 4 generations → frac_reward_zero_std=0.6 (dead)
+  max_new_tokens: 1024                       # GRPO FIX: 512→1024. Thinking traces need room.
+  learning_rate: 5.0e-6                      # Much lower than SFT (RL stability)
+  num_epochs: 1
+  bf16: true
+  logging_steps: 5
+  multi_objective_aggregation: "normalize_then_sum"  # Prevents any single reward dominating
+  mask_truncated_completions: true                   # DAPO best practice: don't penalize incomplete sequences
+
+reward:
+  # GRPO FIX: Reduced from 5 to 2 reward signals.
+  # Evidence: format/structure/reasoning had ZERO variance (SFT handles format perfectly).
+  # format_reward/std=0.002, frac_reward_zero_std=0.6 → dead gradients.
+  # Only keep rewards that DIFFERENTIATE completions:
+  components:
+    - name: "correctness"
+      weight: 2.0
+      description: "PRIMARY: compares model output to expected answer — the ONLY learning signal"
+    - name: "faithfulness"
+      weight: 1.0
+      description: "SECONDARY: does answer reference specific entities from the input prompt?"
+
+data:
+  train_file: "data/processed/training_data.jsonl"
+  max_samples: 2000                          # Quality over quantity for DAPO
+  smoke_samples: 100                         # --smoke quick test
+
+output:
+  dir: "checkpoints/grpo_final"
+
+# Research citations:
+# - DAPO: Clip-higher + token-level loss (TRL v1.0, June 2026)
+# - mask_truncated_completions: Prevents penalizing incomplete sequences (DAPO best practice)
+# - faithfulness_reward: Clinical-R1/CRPO (AAAI 2026)
+# - normalize_then_sum: Prevents reward domination
+# - num_generations=8: More completions → higher reward variance → actual gradient signal

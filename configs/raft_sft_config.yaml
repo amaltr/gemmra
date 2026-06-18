@@ -1,0 +1,57 @@
+# RAFT SFT Retrain Configuration
+# After RAFT generation, retrain SFT with augmented data
+#
+# Key differences from sft_config.yaml:
+#   - train_file points to RAFT-combined data
+#   - Learning rate reduced (2e-5 vs 5e-5) — fine-tuning on already-good model
+#   - Epochs reduced to 0.5 — just needs to absorb RAFT patterns, not relearn everything
+#   - Output goes to checkpoints/sft_raft (preserves original SFT as fallback)
+
+model:
+  name: "google/gemma-4-31b-it"
+  fallback_1: "google/gemma-4-12b-it"
+  max_seq_length: 8192
+  load_in_4bit: false
+  dtype: "bfloat16"
+
+lora:
+  r: 64
+  alpha: 128
+  dropout: 0
+  bias: "none"
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  gradient_checkpointing: "unsloth"
+
+training:
+  per_device_batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 2.0e-5                        # LOWER than SFT (5e-5) — model already good
+  num_epochs: 1                                 # Full epoch on combined data
+  warmup_ratio: 0.03                            # Shorter warmup — model already warmed
+  lr_scheduler: "cosine"
+  weight_decay: 0.01
+  optimizer: "adamw_8bit"
+  fp16: false
+  bf16: true
+  logging_steps: 10
+  save_steps: 200
+  save_total_limit: 3
+  eval_strategy: "steps"
+  eval_steps: 200
+  load_best_model_at_end: true
+  seed: 42
+
+data:
+  train_file: "data/processed/training_data_raft.jsonl"   # RAFT-augmented data
+  eval_file: "data/processed/eval_data.jsonl"
+  format: "gemma4_chat"
+
+output:
+  dir: "checkpoints/sft_raft"                  # Separate from original SFT (fallback safety)
