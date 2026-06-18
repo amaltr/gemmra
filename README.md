@@ -80,7 +80,7 @@ Or use the quantized GGUF directly:
 
 ```bash
 # Download from HuggingFace
-huggingface-cli download amaltrkmr/gemmra-GGUF --local-dir ./models
+huggingface-cli download team-gemmra/gemmra-GGUF --local-dir ./models
 
 # Run with llama.cpp
 ./llama-server -m models/gemmra-Q4_K_M.gguf -c 4096
@@ -95,8 +95,9 @@ huggingface-cli download amaltrkmr/gemmra-GGUF --local-dir ./models
 from unsloth import FastLanguageModel
 import torch
 
+# Downloads the LoRA adapter automatically from HuggingFace on first run
 model, tokenizer = FastLanguageModel.from_pretrained(
-    "checkpoints/sft/", max_seq_length=4096,
+    "amaltrkmr/gemmra", max_seq_length=4096,
     load_in_4bit=False, dtype=torch.bfloat16,
 )
 FastLanguageModel.for_inference(model)
@@ -157,8 +158,8 @@ print(tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_t
 | Format | Link | Size | Use Case |
 |--------|------|:----:|----------|
 | LoRA Adapter | [amaltrkmr/gemmra](https://huggingface.co/amaltrkmr/gemmra) | ~500 MB | Apply to base Gemma 4 31B |
-| GGUF Q4_K_M | [amaltrkmr/gemmra-GGUF](https://huggingface.co/amaltrkmr/gemmra-GGUF) | ~18 GB | Local inference (Ollama / llama.cpp) |
-| GGUF Q8_0 | [amaltrkmr/gemmra-GGUF](https://huggingface.co/amaltrkmr/gemmra-GGUF) | ~33 GB | High-quality local inference |
+| GGUF Q4_K_M | [team-gemmra/gemmra-GGUF](https://huggingface.co/team-gemmra/gemmra-GGUF) | ~18 GB | Local inference (Ollama / llama.cpp) |
+| GGUF Q8_0 | [team-gemmra/gemmra-GGUF](https://huggingface.co/team-gemmra/gemmra-GGUF) | ~33 GB | High-quality local inference |
 
 ## Repository Structure
 
@@ -219,8 +220,8 @@ gemmra/
 
 <table>
   <tr>
-    <td align="center"><strong>Bhaskar Jha</strong><br/>Architecture · Data · Evaluation · Website<br/><a href="https://github.com/bhaskarjha-dev">GitHub</a> · <a href="https://huggingface.co/bhaskarjha-dev">HuggingFace</a></td>
     <td align="center"><strong>Amal T R</strong><br/>Training · Inference · Domain Research · Deployment<br/><a href="https://github.com/amaltrkmr">GitHub</a> · <a href="https://huggingface.co/amaltrkmr">HuggingFace</a></td>
+    <td align="center"><strong>Bhaskar Jha</strong><br/>Architecture · Data · Evaluation · Website<br/><a href="https://github.com/bhaskarjha-dev">GitHub</a> · <a href="https://huggingface.co/bhaskarjha-dev">HuggingFace</a></td>  
   </tr>
 </table>
 
