@@ -1,0 +1,33 @@
+flowchart LR
+    A["Decontaminated Eval Dataset"] --> B["Checkpoint Evaluation"]
+    C["Model Checkpoints"] --> B
+
+    subgraph EvalStage["Evaluation workflow"]
+        B --> B1["Load selected checkpoint or base model"]
+        B1 --> B2["Generate predictions on all four tasks"]
+        B2 --> B3["Parse structured outputs"]
+        B3 --> B4["Score task-specific metrics"]
+    end
+
+    B4 --> D["Evaluation Results"]
+
+    subgraph Metrics["Reported metrics"]
+        D --> D1["Task 1 Seriousness F1"]
+        D --> D2["Task 2 MedDRA score"]
+        D --> D3["Task 3 Labeling F1"]
+        D --> D4["Task 4 Causality score"]
+        D --> D5["Format compliance"]
+    end
+
+    D --> E["Model Comparison Summary"]
+    E --> F["Saved evaluation report"]
+
+    subgraph Summary["Pipeline summary"]
+        K1["Uses decontaminated evaluation data"]
+        K2["Supports base-model and checkpoint comparison"]
+        K3["Measures both answer quality and output-format compliance"]
+    end
+
+    A -. data hygiene .-> K1
+    C -. comparison scope .-> K2
+    D -. evaluation focus .-> K3

@@ -1,0 +1,56 @@
+flowchart TD
+    A["Data pipeline overview"] --> B["FAERS raw data"]
+    A --> C["OnSIDES label source"]
+    A --> D["External biomedical datasets"]
+
+    subgraph FAERSBranch["FAERS backbone"]
+        B --> B1["01_download_faers.py"]
+        B1 --> B2["Download and extract quarterly FAERS archives"]
+        B2 --> B3["02_preprocess.py"]
+        B3 --> B4["Clean, deduplicate, filter, and join FAERS tables"]
+        B4 --> B5["Processed FAERS master dataset"]
+    end
+
+    subgraph LabelBranch["Task 3 label ground truth"]
+        C --> C1["04_download_onsides.py"]
+        C1 --> C2["Build cleaned OnSIDES lookup"]
+    end
+
+    subgraph ExternalBranch["Task 2 and Task 3 enrichment"]
+        D --> D1["05_download_external_datasets.py"]
+        D1 --> D2["Build external pairs and drug class map"]
+    end
+
+    B5 --> E["03_build_training_data.py"]
+    C2 --> E
+    D2 --> E
+
+    subgraph Builder["Multi-task training data builder"]
+        E --> E1["Generate Task 1 seriousness data"]
+        E1 --> E2["Generate Task 2 MedDRA coding data"]
+        E2 --> E3["Generate Task 3 labeling data"]
+        E3 --> E4["Generate Task 4 causality data"]
+        E4 --> E5["Merge all task datasets"]
+        E5 --> E6["Decontaminate train and evaluation split"]
+        E6 --> E7["Export training and evaluation files"]
+    end
+
+    E7 --> F["Final outputs"]
+
+    subgraph Outputs["Produced artifacts"]
+        F --> F1["training_data.jsonl"]
+        F --> F2["eval_data.jsonl"]
+        F --> F3["decontamination_log.txt"]
+    end
+
+    subgraph KeyPoints["Architecture summary"]
+        K1["FAERS is the main case-data backbone"]
+        K2["OnSIDES provides Task 3 labeling supervision"]
+        K3["External datasets strengthen Task 2 and enrich Task 3 reasoning"]
+        K4["All data sources converge in one multi-task builder"]
+    end
+
+    B5 -. backbone .-> K1
+    C2 -. supervision .-> K2
+    D2 -. enrichment .-> K3
+    E -. convergence .-> K4

@@ -1,0 +1,38 @@
+flowchart LR
+    A["Processed Training Data"] --> B["SFT Training Stage"]
+    B --> C["SFT LoRA Checkpoint"]
+
+    C --> D["WiSE-FT Interpolation Stage"]
+    D --> E["Interpolated Checkpoints"]
+
+    subgraph SFTStage["Stage 1: Supervised Fine-Tuning"]
+        B --> B1["Load base Gemma model"]
+        B1 --> B2["Apply LoRA adapters"]
+        B2 --> B3["Train on multi-task pharmacovigilance dataset"]
+        B3 --> B4["Save SFT checkpoint"]
+    end
+
+    subgraph WiSEFTStage["Stage 2: Reasoning Recovery via WiSE-FT"]
+        D --> D1["Load SFT adapter on base model"]
+        D1 --> D2["Scale LoRA weights by alpha"]
+        D2 --> D3["Save interpolated model variants"]
+        D3 --> D4["Quickly verify output behavior"]
+    end
+
+    E --> F["Training Outputs"]
+
+    subgraph Outputs["Produced artifacts"]
+        F --> F1["SFT checkpoint"]
+        F --> F2["WiSE-FT checkpoints"]
+        F --> F3["Training metadata"]
+    end
+
+    subgraph Summary["Pipeline summary"]
+        K1["SFT creates the primary fine-tuned model"]
+        K2["WiSE-FT trades some specialization for recovered reasoning diversity"]
+        K3["Both stages reuse the same base model family and checkpoint workflow"]
+    end
+
+    C -. primary model .-> K1
+    E -. interpolation goal .-> K2
+    B -. shared foundation .-> K3

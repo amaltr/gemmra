@@ -1,0 +1,32 @@
+flowchart LR
+    A["FAERS Data Source"] --> B["01_download_faers.py"]
+    B --> C["Raw FAERS Quarterly Files"]
+
+    C --> D["02_preprocess.py"]
+    D --> E["Processed FAERS Master Dataset"]
+
+    F["OnSIDES Source"] --> G["04_download_onsides.py"]
+    G --> H["OnSIDES Lookup"]
+
+    I["External Biomedical Datasets"] --> J["05_download_external_datasets.py"]
+    J --> K["External Pairs and Drug Class Map"]
+
+    E --> L["03_build_training_data.py"]
+    H --> L
+    K --> L
+
+    L --> M["Multi-task Training Data Builder"]
+    M --> N["Task 1 Seriousness Data"]
+    M --> O["Task 2 MedDRA Coding Data"]
+    M --> P["Task 3 Labeling Data"]
+    M --> Q["Task 4 Causality Data"]
+
+    N --> R["Unified Dataset"]
+    O --> R
+    P --> R
+    Q --> R
+
+    R --> S["Decontaminated Train and Eval Split"]
+    S --> T["training_data.jsonl"]
+    S --> U["eval_data.jsonl"]
+    S --> V["decontamination_log.txt"]

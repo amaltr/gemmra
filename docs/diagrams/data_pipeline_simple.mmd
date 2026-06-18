@@ -1,0 +1,26 @@
+flowchart LR
+    A["FAERS Source"] --> B["FAERS Ingestion and Preprocessing"]
+    C["OnSIDES Source"] --> D["Label Ground Truth Builder"]
+    E["External Biomedical Datasets"] --> F["External Evidence Builder"]
+
+    B --> G["Processed FAERS Dataset"]
+    D --> H["OnSIDES Lookup"]
+    F --> I["External Pairs and Drug Class Map"]
+
+    G --> J["Multi-task Training Data Builder"]
+    H --> J
+    I --> J
+
+    J --> K["Task 1 Seriousness"]
+    J --> L["Task 2 MedDRA Coding"]
+    J --> M["Task 3 Labeling"]
+    J --> N["Task 4 Causality"]
+
+    K --> O["Unified Training Corpus"]
+    L --> O
+    M --> O
+    N --> O
+
+    O --> P["Decontaminated Train and Eval Split"]
+    P --> Q["Training Data"]
+    P --> R["Evaluation Data"]
